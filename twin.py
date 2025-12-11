@@ -350,44 +350,6 @@ def read_controls_from_modbus(context: ModbusServerContext, twin: WTPTwin) -> Di
     return controls
 
 
-def write_controls_to_modbus(context: ModbusServerContext, changes: Dict[str, float]) -> Dict[str, float]:
-    """Persist requested control changes and return the resulting controls."""
-
-    slave = context[0]
-    controls = read_controls_from_modbus(context, twin=None)  # type: ignore[arg-type]
-
-    def clamp(value: float, lo: float, hi: float) -> float:
-        return max(lo, min(hi, float(value)))
-
-    if "wellfield_on" in changes:
-        controls["wellfield_on"] = bool(changes["wellfield_on"])
-    if "ro_on" in changes:
-        controls["ro_on"] = bool(changes["ro_on"])
-    if "dist_pump_on" in changes:
-        controls["dist_pump_on"] = bool(changes["dist_pump_on"])
-
-    if "NaOH_dose" in changes:
-        controls["NaOH_dose"] = clamp(changes["NaOH_dose"], 0.0, 50.0)
-    if "Cl_dose" in changes:
-        controls["Cl_dose"] = clamp(changes["Cl_dose"], 0.0, 10.0)
-    if "Q_out_sp" in changes:
-        controls["Q_out_sp"] = clamp(changes["Q_out_sp"], 0.0, 200.0)
-
-    slave.setValues(1, 0, [
-        int(controls["wellfield_on"]),
-        int(controls["ro_on"]),
-        int(controls["dist_pump_on"]),
-    ])
-
-    slave.setValues(3, 100, [
-        int(round(controls["NaOH_dose"] * 100.0)),
-        int(round(controls["Cl_dose"] * 100.0)),
-        int(round(controls["Q_out_sp"] * 10.0)),
-    ])
-
-    return controls
-
-
 def write_measurements_to_modbus(context: ModbusServerContext, state: Dict[str, float]) -> None:
     """Write measured values into holding registers (scaled integers)."""
     slave = context[0]
@@ -465,12 +427,6 @@ def _dashboard_html() -> str:
     .status.on { background: rgba(76, 175, 80, 0.2); color: var(--ok); border: 1px solid rgba(76, 175, 80, 0.4); }
     .status.off { background: rgba(255, 160, 0, 0.15); color: var(--warn); border: 1px solid rgba(255, 160, 0, 0.4); }
     .subtitle { color: #92a8c4; font-size: 12px; margin-bottom: 6px; }
-    .controls { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-top: 8px; }
-    button, input[type=\"number\"] { width: 100%; box-sizing: border-box; border-radius: 8px; border: 1px solid #1f3553; background: #0b1524; color: var(--text); padding: 8px 10px; font-size: 14px; }
-    button { cursor: pointer; transition: border-color 0.15s ease, color 0.15s ease; }
-    button:hover { border-color: var(--accent); color: var(--accent); }
-    label { font-size: 12px; color: #9db3d2; display: block; margin-bottom: 4px; }
-    .hint { color: #7e93b3; font-size: 12px; margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -478,7 +434,7 @@ def _dashboard_html() -> str:
     <div style=\"display:flex;align-items:center;justify-content:space-between;gap:12px;\">
       <div>
         <h1>CLEAN WTP Digital Twin – Live Overview</h1>
-        <div class=\"subtitle\">Updates pushed via server-sent events; falls back to 1s polling. Adjust setpoints below.</div>
+        <div class=\"subtitle\">Updates pushed via server-sent events; falls back to 1s polling</div>
       </div>
       <div id=\"conn_status\" class=\"status off\">Connecting...</div>
     </div>
@@ -517,44 +473,6 @@ def _dashboard_html() -> str:
       <div class=\"metric\"><span>Tank Volume</span><span id=\"volume\">-</span></div>
       <div class=\"metric\"><span>Demand Setpoint</span><span id=\"Q_out_sp\">-</span></div>
       <div class=\"metric\"><span>Outlet Flow</span><span id=\"Q_out\">-</span></div>
-    </section>
-
-    <section class=\"card\">
-      <h2>Controls</h2>
-      <div class=\"controls\">
-        <div>
-          <label>Wellfield Pump</label>
-          <button id=\"toggle_wellfield\">Toggle</button>
-        </div>
-        <div>
-          <label>RO Train</label>
-          <button id=\"toggle_ro\">Toggle</button>
-        </div>
-        <div>
-          <label>Distribution Pump</label>
-          <button id=\"toggle_dist\">Toggle</button>
-        </div>
-      </div>
-      <div class=\"controls\">
-        <div>
-          <label for=\"NaOH_input\">NaOH Dose (mg/L)</label>
-          <input id=\"NaOH_input\" type=\"number\" step=\"0.1\" min=\"0\" max=\"50\" />
-        </div>
-        <div>
-          <label for=\"Cl_input\">Cl Dose (mg/L)</label>
-          <input id=\"Cl_input\" type=\"number\" step=\"0.1\" min=\"0\" max=\"10\" />
-        </div>
-        <div>
-          <label for=\"Qout_input\">Demand Setpoint (m3/h)</label>
-          <input id=\"Qout_input\" type=\"number\" step=\"1\" min=\"0\" max=\"200\" />
-        </div>
-      </div>
-      <div class=\"controls\">
-        <div>
-          <button id=\"apply_setpoints\">Apply Setpoints</button>
-        </div>
-      </div>
-      <div class=\"hint\" id=\"last_action\">Use the controls above to update Modbus coils and setpoints.</div>
     </section>
   </main>
 
@@ -597,10 +515,6 @@ def _dashboard_html() -> str:
       document.getElementById('H2S_out').textContent = s.H2S_out.toFixed(2) + ' mg/L';
       document.getElementById('level').textContent = (s.level_clearwell_meas || s.level_clearwell).toFixed(2) + ' m';
       document.getElementById('volume').textContent = s.V_clearwell.toFixed(1) + ' m3';
-
-      document.getElementById('NaOH_input').value = (c.NaOH_dose || 0).toFixed(2);
-      document.getElementById('Cl_input').value = (c.Cl_dose || 0).toFixed(2);
-      document.getElementById('Qout_input').value = (c.Q_out_sp || 0).toFixed(1);
 
       document.getElementById('Q_feed_bar').style.width = clamp(100 * s.Q_feed / (params.Q_well_nom + 1e-6), 0, 100) + '%';
       document.getElementById('Q_perm_bar').style.width = clamp(100 * s.Q_perm / (params.Q_well_nom + 1e-6), 0, 100) + '%';
@@ -647,46 +561,6 @@ def _dashboard_html() -> str:
       };
     }
 
-    async function sendControl(changes, friendly) {
-      try {
-        const res = await fetch('/api/control', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(changes),
-        });
-        if (!res.ok) throw new Error('Request failed');
-        const payload = await res.json();
-        render(payload);
-        const msg = `${friendly} updated at ${new Date().toLocaleTimeString()}`;
-        document.getElementById('last_action').textContent = msg;
-      } catch (err) {
-        console.error(err);
-        document.getElementById('last_action').textContent = 'Control update failed';
-      }
-    }
-
-    document.getElementById('toggle_wellfield').onclick = () => {
-      const on = document.getElementById('wellfield_status').classList.contains('off');
-      sendControl({ wellfield_on: on }, 'Wellfield');
-    };
-
-    document.getElementById('toggle_ro').onclick = () => {
-      const on = document.getElementById('ro_status').classList.contains('off');
-      sendControl({ ro_on: on }, 'RO train');
-    };
-
-    document.getElementById('toggle_dist').onclick = () => {
-      const on = document.getElementById('dist_status').classList.contains('off');
-      sendControl({ dist_pump_on: on }, 'Distribution pump');
-    };
-
-    document.getElementById('apply_setpoints').onclick = () => {
-      const NaOH = parseFloat(document.getElementById('NaOH_input').value || '0');
-      const Cl = parseFloat(document.getElementById('Cl_input').value || '0');
-      const Qout = parseFloat(document.getElementById('Qout_input').value || '0');
-      sendControl({ NaOH_dose: NaOH, Cl_dose: Cl, Q_out_sp: Qout }, 'Setpoints');
-    };
-
     startStream();
   </script>
 </body>
@@ -697,16 +571,6 @@ def _dashboard_html() -> str:
 class TwinRequestHandler(BaseHTTPRequestHandler):
     twin: WTPTwin
     context: Optional[ModbusServerContext]
-
-    def _json_body(self) -> Dict[str, float]:
-        length = int(self.headers.get("Content-Length", 0))
-        if length <= 0:
-            return {}
-        raw = self.rfile.read(length)
-        try:
-            return json.loads(raw.decode("utf-8"))
-        except json.JSONDecodeError:
-            return {}
 
     def _send_json(self, payload: Dict) -> None:
         data = json.dumps(payload).encode()
@@ -747,17 +611,6 @@ class TwinRequestHandler(BaseHTTPRequestHandler):
             except Exception:
                 # Client closed connection or encountered an error; just exit loop
                 return
-
-        self.send_error(HTTPStatus.NOT_FOUND, "Not found")
-
-    def do_POST(self) -> None:  # noqa: N802 - keep BaseHTTPRequestHandler signature
-        if self.path == "/api/control" and self.context is not None:
-            changes = self._json_body()
-            controls = write_controls_to_modbus(self.context, changes)
-            payload = build_state_payload(self.twin, self.context)
-            payload["controls"] = controls
-            self._send_json(payload)
-            return
 
         self.send_error(HTTPStatus.NOT_FOUND, "Not found")
 

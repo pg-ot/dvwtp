@@ -29,8 +29,6 @@ Launch the simulator, Modbus server, and web dashboard:
 
 - Modbus TCP: `0.0.0.0:5020` (coils and holding registers)
 - Web dashboard & API: `http://localhost:8000`
-  - Live visuals via SSE and a control panel to toggle pumps / adjust NaOH, Cl,
-    and demand setpoints (writes back to Modbus coils & registers)
 
 If you prefer manual steps:
 
