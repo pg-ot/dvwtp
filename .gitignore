@@ -35,3 +35,10 @@ Thumbs.db
 # Testing
 coverage/
 .nyc_output/
+
+# Confidential Documentation
+CYBER_PHA.md
+CYBER_PHA.csv
+SCENARIO_COVERAGE_ANALYSIS.md
+docs/CYBER_PHA.md
+docs/SCENARIO_COVERAGE_ANALYSIS.md

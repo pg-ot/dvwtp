@@ -37,9 +37,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1OTbBb5yfhSaybpQvDrAPRL
 
 ## Documentation
 
-- [Cyber-PHA](docs/CYBER_PHA.md) - 22 attack scenarios with risk analysis
 - [Modbus Map](docs/MODBUS_MAP.md) - Register mapping for OpenPLC
-- [Scenario Coverage](docs/SCENARIO_COVERAGE_ANALYSIS.md) - Implementation verification
 
 ## Project Structure
 
