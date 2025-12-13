@@ -35,6 +35,32 @@ View your app in AI Studio: https://ai.studio/apps/drive/1OTbBb5yfhSaybpQvDrAPRL
 - Falls back to JavaScript simulation if backend is offline
 - Modbus server runs on port 502 (may require admin/sudo privileges)
 
+## Documentation
+
+- [Cyber-PHA](docs/CYBER_PHA.md) - 22 attack scenarios with risk analysis
+- [Modbus Map](docs/MODBUS_MAP.md) - Register mapping for OpenPLC
+- [Scenario Coverage](docs/SCENARIO_COVERAGE_ANALYSIS.md) - Implementation verification
+
+## Project Structure
+
+```
+dvwtp/
+├── docs/                 # Documentation
+│   ├── CYBER_PHA.md     # Process Hazard Analysis
+│   ├── MODBUS_MAP.md    # Modbus register mapping
+│   └── SCENARIO_COVERAGE_ANALYSIS.md
+├── src/                  # Frontend source
+│   ├── components/      # React components
+│   ├── services/        # API and simulation
+│   ├── App.tsx
+│   ├── index.tsx
+│   └── types.ts
+├── public/              # Static assets
+├── twin.py              # Python digital twin
+├── requirements.txt     # Python dependencies
+└── package.json         # Node dependencies
+```
+
 ## Architecture
 
 - **twin.py** - Python digital twin with full physics simulation and damage modeling
